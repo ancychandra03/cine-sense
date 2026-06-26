@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MoviSpect</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=Work+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #0A0118;
+    --black-deep: #060110;
+    --cream: #F2EEFF;
+    --red: #FF2E63;
+    --red-dim: #B81E47;
+    --steel: #8C7AB5;
+    --gold: #9D4EDD;
+    --violet: #7B2FF7;
+    --grain-opacity: 0.025;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--black);
+    color: var(--cream);
+    font-family: 'Work Sans', sans-serif;
+    overflow-x: hidden;
+  }
+
+  /* ── Wave-motion gradient background (signature element) ── */
+  .wave-bg {
+    position: fixed;
+    inset: -20%;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 60% 50% at 20% 30%, rgba(255,46,99,0.20) 0%, transparent 60%),
+      radial-gradient(ellipse 55% 45% at 80% 65%, rgba(123,47,247,0.22) 0%, transparent 60%),
+      radial-gradient(ellipse 45% 55% at 50% 85%, rgba(157,78,221,0.16) 0%, transparent 60%);
+    animation: waveMotion 16s ease-in-out infinite;
+    filter: blur(10px);
+  }
+  @keyframes waveMotion {
+    0%   { transform: translate(0%, 0%) scale(1) rotate(0deg); }
+    25%  { transform: translate(-3%, 4%) scale(1.08) rotate(2deg); }
+    50%  { transform: translate(2%, -3%) scale(1.04) rotate(-2deg); }
+    75%  { transform: translate(-2%, -4%) scale(1.1) rotate(1deg); }
+    100% { transform: translate(0%, 0%) scale(1) rotate(0deg); }
+  }
+
+  /* ── Ambient projector-light layer (signature element) ── */
+  .light-sweep {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 900px 650px at var(--lx, 50%) var(--ly, 30%),
+        rgba(255, 46, 99, 0.16) 0%,
+        rgba(123, 47, 247, 0.12) 35%,
+        transparent 70%);
+    transition: background-position 0.3s ease;
+    animation: drift 18s ease-in-out infinite;
+  }
+
+  @keyframes drift {
+    0%, 100% { --lx: 35%; --ly: 25%; }
+    50% { --lx: 65%; --ly: 45%; }
+  }
+
+  .grain {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0.5;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(157,78,221,0.025) 0px, transparent 1px, transparent 2px, rgba(157,78,221,0.025) 3px);
+    mix-blend-mode: screen;
+  }
+
+  /* ── SCREEN 1: Intro ───────────────────────────────── */
+  #intro {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--black-deep);
+    transition: opacity 0.8s ease, visibility 0.8s ease;
+  }
+  #intro.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+  .intro-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: clamp(48px, 11vw, 140px);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    display: flex;
+    position: relative;
+    overflow: hidden;
+    animation: titlePunch 0.4s ease-out forwards;
+    animation-delay: 1.0s;
+  }
+  @keyframes titlePunch {
+    0%   { filter: brightness(1); transform: scale(1); }
+    15%  { filter: brightness(1.3); transform: scale(1.015); }
+    100% { filter: brightness(1); transform: scale(1); }
+  }
+  .intro-half {
+    position: relative;
+    background: linear-gradient(100deg, #FF2E63 0%, #F2EEFF 45%, #9D4EDD 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .intro-title::after {
+    content: "";
+    position: absolute;
+    inset: -40px;
+    background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(157,78,221,0.3), transparent 70%);
+    z-index: -1;
+    filter: blur(24px);
+  }
+  .intro-left {
+    transform: translateX(-160%);
+    animation: slideInLeft 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation-delay: 0.2s;
+  }
+  .intro-right {
+    transform: translateX(160%);
+    animation: slideInRight 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation-delay: 0.2s;
+  }
+  @keyframes slideInLeft { to { transform: translateX(0); } }
+  @keyframes slideInRight { to { transform: translateX(0); } }
+
+  .light-streak {
+    position: absolute;
+    top: 0;
+    left: -30%;
+    width: 35%;
+    height: 100%;
+    background: linear-gradient(75deg,
+      transparent 0%,
+      rgba(255,255,255,0) 35%,
+      rgba(255,255,255,0.85) 50%,
+      rgba(255,255,255,0) 65%,
+      transparent 100%);
+    opacity: 0;
+    pointer-events: none;
+    mix-blend-mode: overlay;
+    animation: streakSweep 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation-delay: 1.0s;
+  }
+  @keyframes streakSweep {
+    0%   { opacity: 0; left: -30%; }
+    15%  { opacity: 1; }
+    70%  { opacity: 1; }
+    100% { opacity: 0; left: 95%; }
+  }
+
+  .intro-beam {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 550px 350px at 50% 50%, rgba(255,46,99,0.22), rgba(123,47,247,0.14) 50%, transparent 70%);
+    animation: pulseBeam 2.4s ease-in-out infinite;
+  }
+  @keyframes pulseBeam {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+  }
+
+  .skip-hint {
+    position: absolute;
+    bottom: 40px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--steel);
+    text-transform: uppercase;
+    opacity: 0;
+    animation: fadeInHint 0.6s ease forwards;
+    animation-delay: 2.2s;
+    cursor: pointer;
+  }
+  @keyframes fadeInHint { to { opacity: 0.7; } }
+
+  /* ── Screens wrapper ───────────────────────────────── */
+  .screen {
+    position: relative;
+    z-index: 2;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 24px;
+  }
+
+  /* ── SCREEN 2: Hero ────────────────────────────────── */
+  #hero { text-align: center; }
+
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #D9B8FF;
+    font-weight: 500;
+    margin-bottom: 24px;
+    opacity: 0;
+    text-shadow: 0 0 20px rgba(157, 78, 221, 0.5);
+    animation: fadeUp 0.8s ease forwards;
+    animation-delay: 0.1s;
+  }
+
+  .hero-title {
+    font-family: 'Unbounded', sans-serif;
+    font-weight: 800;
+    font-size: clamp(52px, 8.5vw, 110px);
+    line-height: 1;
+    letter-spacing: -0.02em;
+    position: relative;
+    background: linear-gradient(100deg, #FF2E63 0%, #F2EEFF 40%, #9D4EDD 75%, #FF2E63 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    opacity: 0;
+    animation: fadeUp 0.9s ease forwards;
+    animation-delay: 0.25s;
+  }
+  .hero-title::after {
+    content: "";
+    position: absolute;
+    inset: -30px;
+    background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(157,78,221,0.25), transparent 70%);
+    z-index: -1;
+    filter: blur(20px);
+  }
+
+  .hero-sub {
+    font-family: 'Work Sans', sans-serif;
+    font-size: clamp(16px, 2vw, 21px);
+    font-weight: 400;
+    color: #C4B8E0;
+    max-width: 560px;
+    margin: 28px auto 0;
+    line-height: 1.5;
+    opacity: 0;
+    animation: fadeUp 0.9s ease forwards;
+    animation-delay: 0.4s;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .scroll-cue {
+    position: absolute;
+    bottom: 48px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    color: var(--steel);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards;
+    animation-delay: 0.7s;
+  }
+  .scroll-cue .line {
+    width: 1px;
+    height: 36px;
+    background: linear-gradient(to bottom, var(--steel), transparent);
+    animation: pulseLine 2s ease-in-out infinite;
+  }
+  @keyframes pulseLine {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+  }
+
+  /* ── SCREEN 3: Navigation cards ────────────────────── */
+  #nav-screen {
+    flex-direction: column;
+  }
+
+  .nav-heading {
+    text-align: center;
+    margin-bottom: 56px;
+  }
+  .nav-heading .eyebrow { animation: none; opacity: 0.85; }
+  .nav-heading h2 {
+    font-family: 'Unbounded', sans-serif;
+    font-size: clamp(32px, 4.5vw, 50px);
+    font-weight: 700;
+    color: var(--cream);
+    margin-top: 12px;
+    letter-spacing: -0.01em;
+  }
+
+  .card-row {
+    display: flex;
+    gap: 28px;
+    width: 100%;
+    max-width: 1040px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .nav-card {
+    position: relative;
+    flex: 1;
+    min-width: 320px;
+    max-width: 500px;
+    height: 420px;
+    border-radius: 16px;
+    border: 1.5px solid rgba(157,78,221,0.35);
+    background: linear-gradient(165deg, rgba(123,47,247,0.14), rgba(10,1,24,0.65));
+    box-shadow: 0 20px 60px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06);
+    backdrop-filter: blur(8px);
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.4s ease, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease, box-shadow 0.4s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 36px;
+    opacity: 0;
+    transform: translateY(60px) scale(0.94);
+  }
+  .nav-card.in-view {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  .nav-card.recommender.in-view { transition-delay: 0.05s; }
+  .nav-card.analyzer.in-view { transition-delay: 0.2s; }
+
+  .nav-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 320px 260px at 50% 100%, var(--card-glow, rgba(255,46,99,0.22)), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.5s ease;
+  }
+  .nav-card:hover::before { opacity: 1; }
+  .nav-card.in-view:hover {
+    border-color: var(--card-border, var(--red));
+    transform: translateY(-6px) scale(1);
+    box-shadow: 0 28px 70px rgba(0,0,0,0.5), 0 0 40px var(--card-glow, rgba(255,46,99,0.25)), inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+
+  .card-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--gold);
+    position: relative;
+    z-index: 2;
+  }
+
+  .card-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 34px;
+    font-weight: 700;
+    color: var(--cream);
+    margin: 14px 0 16px;
+    letter-spacing: -0.01em;
+    position: relative;
+    z-index: 2;
+  }
+
+  .card-desc {
+    font-size: 14.5px;
+    color: #B3A3D4;
+    line-height: 1.6;
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height 0.45s ease, opacity 0.35s ease;
+    position: relative;
+    z-index: 2;
+  }
+  .nav-card:hover .card-desc { max-height: 120px; opacity: 1; }
+
+  .card-arrow {
+    margin-top: auto;
+    padding-top: 18px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    font-weight: 500;
+    color: var(--cream);
+    opacity: 0;
+    transform: translateX(-8px);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+    position: relative;
+    z-index: 2;
+  }
+  .nav-card:hover .card-arrow { opacity: 1; transform: translateX(0); }
+
+  .nav-card.recommender { --card-glow: rgba(157,78,221,0.28); --card-border: var(--gold); }
+  .nav-card.analyzer { --card-glow: rgba(255,46,99,0.28); --card-border: var(--red); }
+
+  /* ── Footer ─────────────────────────────────────────── */
+  .footer-note {
+    margin-top: 80px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--steel);
+    opacity: 0.5;
+    text-transform: uppercase;
+  }
+
+  /* ── Reduced motion ─────────────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    .light-sweep { animation: none; }
+    .intro-title span { animation: none; opacity: 1; transform: none; filter: none; }
+    .hero-title, .hero-sub, .eyebrow, .scroll-cue { animation: none; opacity: 1; transform: none; }
+  }
+
+  /* ── Mobile ─────────────────────────────────────────── */
+  @media (max-width: 640px) {
+    .card-row { flex-direction: column; }
+    .nav-card { height: 360px; }
+  }
+
+  /* Focus visibility */
+  .nav-card:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 4px;
+  }
+
+  /* ── SCREEN 4: Mood Reel ────────────────────────────── */
+  #mood-reel {
+    flex-direction: column;
+    padding-top: 100px;
+    padding-bottom: 100px;
+  }
+
+  .back-link {
+    position: absolute;
+    top: 32px;
+    left: 32px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    color: var(--steel);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.25s ease;
+    z-index: 10;
+  }
+  .back-link:hover { color: var(--cream); }
+
+  .reel-heading {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  .reel-heading h2 {
+    font-family: 'Unbounded', sans-serif;
+    font-size: clamp(28px, 4vw, 44px);
+    font-weight: 700;
+    color: var(--cream);
+    letter-spacing: -0.01em;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .search-row {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto 12px;
+  }
+  .search-input {
+    flex: 1;
+    width: 100%;
+    background: rgba(157,78,221,0.08);
+    border: 1.5px solid rgba(157,78,221,0.3);
+    border-radius: 12px;
+    padding: 16px 20px;
+    color: var(--cream);
+    font-family: 'Work Sans', sans-serif;
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.25s ease, background 0.25s ease;
+  }
+  .search-input::placeholder { color: #7A6B9E; }
+  .search-input:focus {
+    border-color: var(--red);
+    background: rgba(157,78,221,0.13);
+  }
+
+  .search-btn {
+    background: linear-gradient(100deg, #FF2E63, #9D4EDD);
+    border: none;
+    border-radius: 12px;
+    padding: 0 28px;
+    color: #fff;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    white-space: nowrap;
+  }
+  .search-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(255,46,99,0.4);
+  }
+
+  .or-divider {
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--steel);
+    margin: 32px 0 24px;
+  }
+
+  .genre-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  .genre-chip {
+    position: relative;
+    padding: 13px 24px;
+    border-radius: 30px;
+    border: 1.5px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.03);
+    color: var(--cream);
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 500;
+    font-size: 14.5px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    overflow: hidden;
+  }
+  .genre-chip::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--chip-color, linear-gradient(100deg, #FF2E63, #9D4EDD));
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    z-index: -1;
+  }
+  .genre-chip:hover {
+    border-color: transparent;
+    transform: translateY(-3px) scale(1.04);
+  }
+  .genre-chip:hover::before { opacity: 0.85; }
+  .genre-chip.active {
+    border-color: transparent;
+  }
+  .genre-chip.active::before { opacity: 1; }
+
+  /* Assign varied accent colors per chip for visual richness */
+  .genre-chip:nth-child(1) { --chip-color: linear-gradient(100deg, #FF2E63, #FF8FA3); }
+  .genre-chip:nth-child(2) { --chip-color: linear-gradient(100deg, #9D4EDD, #C77DFF); }
+  .genre-chip:nth-child(3) { --chip-color: linear-gradient(100deg, #7B2FF7, #FF2E63); }
+  .genre-chip:nth-child(4) { --chip-color: linear-gradient(100deg, #5A2A9E, #9D4EDD); }
+  .genre-chip:nth-child(5) { --chip-color: linear-gradient(100deg, #FF2E63, #9D4EDD); }
+  .genre-chip:nth-child(6) { --chip-color: linear-gradient(100deg, #C77DFF, #FF8FA3); }
+  .genre-chip:nth-child(7) { --chip-color: linear-gradient(100deg, #9D4EDD, #FF2E63); }
+  .genre-chip:nth-child(8) { --chip-color: linear-gradient(100deg, #7B2FF7, #C77DFF); }
+
+  /* ── Results ────────────────────────────────────────── */
+  .results-section {
+    width: 100%;
+    max-width: 1100px;
+    margin: 56px auto 0;
+    display: none;
+  }
+  .results-section.visible { display: block; }
+
+  .results-heading {
+    font-family: 'Unbounded', sans-serif;
+    font-size: clamp(22px, 3vw, 30px);
+    font-weight: 700;
+    color: var(--cream);
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  .movie-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+  }
+  @media (max-width: 900px) { .movie-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 540px) { .movie-grid { grid-template-columns: 1fr; } }
+
+  .movie-card {
+    background: linear-gradient(165deg, rgba(123,47,247,0.12), rgba(10,1,24,0.6));
+    border: 1.5px solid rgba(157,78,221,0.25);
+    border-radius: 14px;
+    padding: 20px 16px;
+    cursor: pointer;
+    transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), border-color 0.3s ease, box-shadow 0.3s ease;
+    text-align: center;
+  }
+  .movie-card:hover {
+    transform: translateY(-6px);
+    border-color: var(--red);
+    box-shadow: 0 16px 40px rgba(255,46,99,0.2);
+  }
+  .movie-poster-icon {
+    font-size: 36px;
+    margin-bottom: 12px;
+  }
+  .movie-card-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--cream);
+    margin-bottom: 6px;
+    line-height: 1.3;
+  }
+  .movie-card-genre {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.05em;
+    color: #C77DFF;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .movie-card-rating {
+    font-size: 12.5px;
+    color: var(--steel);
+  }
+
+  /* ── Detail overlay ─────────────────────────────────── */
+  .detail-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: rgba(6,1,16,0.88);
+    backdrop-filter: blur(6px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .detail-overlay.visible { display: flex; }
+
+  /* Blurred poster backdrop — placeholder gradient until real posters
+     are wired in via TMDB. Swap background-image to the movie's poster
+     URL once the API is connected (see openDetail() in JS). */
+  .detail-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background-color: var(--backdrop-tint, #7B2FF7);
+    background-image: var(--backdrop-image, linear-gradient(160deg, #7B2FF7, #FF2E63));
+    background-size: cover;
+    background-position: center;
+    filter: blur(50px) saturate(1.3) brightness(0.55);
+    transform: scale(1.15);
+    opacity: 0.85;
+    transition: background-image 0.4s ease;
+  }
+  .detail-backdrop::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 70% 60% at 50% 50%, transparent 0%, rgba(6,1,16,0.75) 100%);
+  }
+
+  .detail-panel {
+    background: linear-gradient(165deg, rgba(40,20,70,0.92), rgba(10,1,24,0.96));
+    border: 1.5px solid rgba(157,78,221,0.4);
+    border-radius: 20px;
+    max-width: 720px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 36px;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 30px 90px rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+  }
+
+  .detail-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: var(--cream);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease;
+    z-index: 2;
+  }
+  .detail-close:hover { background: rgba(255,46,99,0.3); }
+
+  .detail-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: clamp(24px, 3vw, 34px);
+    font-weight: 700;
+    color: var(--cream);
+    margin-bottom: 16px;
+    padding-right: 40px;
+  }
+  .detail-meta {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .detail-meta span {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #C77DFF;
+    background: rgba(157,78,221,0.12);
+    padding: 6px 14px;
+    border-radius: 20px;
+  }
+  .detail-overview {
+    color: #D4C9E8;
+    font-size: 15px;
+    line-height: 1.7;
+    margin-bottom: 24px;
+  }
+  .detail-watch-heading {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--cream);
+    margin-bottom: 10px;
+  }
+  .detail-watch-list {
+    color: var(--steel);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .loading-text {
+    text-align: center;
+    color: var(--steel);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    padding: 40px 0;
+    display: none;
+  }
+  .loading-text.visible { display: block; }
+
+  /* ── SCREEN 5: The Verdict ──────────────────────────── */
+  #verdict {
+    flex-direction: column;
+    padding-top: 100px;
+    padding-bottom: 100px;
+  }
+
+  .verdict-heading {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  .verdict-heading h2 {
+    font-family: 'Unbounded', sans-serif;
+    font-size: clamp(28px, 4vw, 44px);
+    font-weight: 700;
+    color: var(--cream);
+    letter-spacing: -0.01em;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .verdict-form {
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  .movie-picker {
+    position: relative;
+    margin-bottom: 18px;
+  }
+
+  .suggestions-list {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    background: rgba(20,8,40,0.97);
+    border: 1.5px solid rgba(157,78,221,0.3);
+    border-radius: 12px;
+    overflow: hidden;
+    z-index: 20;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+    display: none;
+  }
+  .suggestions-list.visible { display: block; }
+
+  .suggestion-item {
+    padding: 13px 18px;
+    cursor: pointer;
+    font-family: 'Work Sans', sans-serif;
+    font-size: 14.5px;
+    color: var(--cream);
+    transition: background 0.15s ease;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .suggestion-item:last-child { border-bottom: none; }
+  .suggestion-item:hover,
+  .suggestion-item.highlighted {
+    background: rgba(157,78,221,0.18);
+  }
+  .suggestion-item .sugg-genre {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #C77DFF;
+    margin-left: 8px;
+  }
+
+  .verdict-textarea {
+    width: 100%;
+    background: rgba(157,78,221,0.08);
+    border: 1.5px solid rgba(157,78,221,0.3);
+    border-radius: 14px;
+    padding: 18px 20px;
+    color: var(--cream);
+    font-family: 'Work Sans', sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    outline: none;
+    resize: vertical;
+    min-height: 130px;
+    margin-bottom: 18px;
+    transition: border-color 0.25s ease, background 0.25s ease;
+  }
+  .verdict-textarea::placeholder { color: #7A6B9E; }
+  .verdict-textarea:focus {
+    border-color: var(--red);
+    background: rgba(157,78,221,0.13);
+  }
+
+  .submit-row {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 8px;
+  }
+
+  .submit-btn {
+    background: linear-gradient(100deg, #FF2E63, #9D4EDD);
+    border: none;
+    border-radius: 12px;
+    padding: 15px 36px;
+    color: #fff;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .submit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px rgba(255,46,99,0.4);
+  }
+  .submit-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .verdict-warning {
+    text-align: center;
+    color: #FFB4C2;
+    font-size: 13.5px;
+    margin-top: 10px;
+    display: none;
+  }
+  .verdict-warning.visible { display: block; }
+
+  /* ── Verdict result ─────────────────────────────────── */
+  .verdict-result {
+    max-width: 640px;
+    margin: 40px auto 0;
+    display: none;
+  }
+  .verdict-result.visible { display: block; animation: fadeUp 0.4s ease; }
+
+  .result-card {
+    border-radius: 16px;
+    padding: 26px 30px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-bottom: 24px;
+  }
+  .result-card.positive {
+    background: linear-gradient(135deg, rgba(34,197,94,0.16), rgba(34,197,94,0.04));
+    border: 1.5px solid rgba(74,222,128,0.35);
+  }
+  .result-card.negative {
+    background: linear-gradient(135deg, rgba(239,68,68,0.16), rgba(239,68,68,0.04));
+    border: 1.5px solid rgba(248,113,113,0.35);
+  }
+  .result-emoji {
+    font-size: 38px;
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.06);
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .result-title-pos { font-size: 19px; font-weight: 700; color: #4ade80; margin-bottom: 4px; }
+  .result-title-neg { font-size: 19px; font-weight: 700; color: #f87171; margin-bottom: 4px; }
+  .result-conf { font-size: 13px; color: #C9C4DD; margin-bottom: 8px; }
+  .conf-track { height: 7px; background: rgba(255,255,255,0.08); border-radius: 4px; width: 100%; max-width: 230px; overflow: hidden; }
+  .conf-fill-pos { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #22c55e, #4ade80); }
+  .conf-fill-neg { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #ef4444, #f87171); }
+
+  .tally-box {
+    background: linear-gradient(165deg, rgba(123,47,247,0.12), rgba(10,1,24,0.6));
+    border: 1.5px solid rgba(157,78,221,0.25);
+    border-radius: 16px;
+    padding: 24px 28px;
+  }
+  .tally-heading {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--cream);
+    margin-bottom: 16px;
+  }
+  .tally-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14.5px;
+    margin-bottom: 10px;
+  }
+  .tally-pos { color: #4ade80; font-weight: 600; }
+  .tally-neg { color: #f87171; font-weight: 600; }
+  .tally-total {
+    color: var(--steel);
+    font-size: 13px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+
+  <div class="wave-bg"></div>
+  <div class="light-sweep"></div>
+  <div class="grain"></div>
+
+  <!-- SCREEN 1: Intro animation -->
+  <div id="intro">
+    <div class="intro-beam"></div>
+    <h1 class="intro-title">
+      <span class="intro-half intro-left">Movi</span><span class="intro-half intro-right">Spect</span>
+      <div class="light-streak"></div>
+    </h1>
+    <div class="skip-hint" id="skipHint">scroll or click to enter</div>
+  </div>
+
+  <!-- SCREEN 2: Hero -->
+  <section class="screen" id="hero">
+    <p class="eyebrow">A film discovery & review experience</p>
+    <h1 class="hero-title">MoviSpect</h1>
+    <p class="hero-sub">Tell us your mood, find the film that fits it — step into the screening room and see what the audience really thought.</p>
+    <div class="scroll-cue">
+      <span>Scroll</span>
+      <div class="line"></div>
+    </div>
+  </section>
+
+  <!-- SCREEN 3: Navigation -->
+  <section class="screen" id="nav-screen">
+    <div class="nav-heading">
+      <p class="eyebrow">Choose your screening</p>
+      <h2>Where would you like to start?</h2>
+    </div>
+    <div class="card-row">
+      <div class="nav-card recommender" tabindex="0" onclick="location.href='#mood-reel'">
+        <p class="card-tag">For when you don't know what to watch</p>
+        <h3 class="card-title">Mood Reel</h3>
+        <p class="card-desc">Tell us how you're feeling tonight — thrilled, reflective, in the mood for something funny — and we'll pull films that genuinely match, drawn from real plot and genre data, not guesswork.</p>
+        <p class="card-arrow">ENTER →</p>
+      </div>
+      <div class="nav-card analyzer" tabindex="0" onclick="location.href='#verdict'">
+        <p class="card-tag">For when you've already watched</p>
+        <h3 class="card-title">The Verdict</h3>
+        <p class="card-desc">Write your honest take on a film and our model reads the tone behind your words — positive or negative — then adds it to that movie's running verdict from everyone else.</p>
+        <p class="card-arrow">ENTER →</p>
+      </div>
+    </div>
+    <p class="footer-note">Built with scikit-learn · TMDB · FastAPI</p>
+  </section>
+
+  <!-- SCREEN 4: Mood Reel -->
+  <section class="screen" id="mood-reel">
+    <a href="#hero" class="back-link">← Back</a>
+
+    <div class="reel-heading">
+      <p class="eyebrow">Mood Reel</p>
+      <h2>How are you feeling? What do you want to watch?</h2>
+    </div>
+
+    <div class="search-row">
+      <input type="text" class="search-input" id="moodSearchInput" placeholder="e.g. something funny but heartfelt...">
+      <button class="search-btn" id="moodSearchBtn">Search</button>
+    </div>
+
+    <p class="or-divider">— or pick a mood instead —</p>
+
+    <div class="genre-grid" id="genreGrid">
+      <!-- genre chips injected by JS -->
+    </div>
+
+    <p class="loading-text" id="reelLoading">Finding films that fit...</p>
+
+    <div class="results-section" id="resultsSection">
+      <p class="results-heading">🍿 Here are your recommendations</p>
+      <div class="movie-grid" id="movieGrid"></div>
+    </div>
+  </section>
+
+  <!-- SCREEN 5: The Verdict -->
+  <section class="screen" id="verdict">
+    <a href="#hero" class="back-link">← Back</a>
+
+    <div class="verdict-heading">
+      <p class="eyebrow">The Verdict</p>
+      <h2>Got an opinion? Let's hear the verdict.</h2>
+    </div>
+
+    <div class="verdict-form">
+      <div class="movie-picker">
+        <input type="text" class="search-input" id="verdictMovieInput" placeholder="Which movie are you reviewing?" autocomplete="off">
+        <div class="suggestions-list" id="suggestionsList"></div>
+      </div>
+
+      <textarea class="verdict-textarea" id="verdictReviewInput" placeholder="What did you think? Be honest — the model can handle it..."></textarea>
+
+      <div class="submit-row">
+        <button class="submit-btn" id="verdictSubmitBtn">Submit Verdict</button>
+      </div>
+      <p class="verdict-warning" id="verdictWarning">Please pick a movie and write a few words about it first.</p>
+    </div>
+
+    <div class="verdict-result" id="verdictResult">
+      <div class="result-card" id="resultCard">
+        <div class="result-emoji" id="resultEmoji">😊</div>
+        <div style="flex:1;">
+          <p id="resultTitle" class="result-title-pos">That was a positive review!</p>
+          <p class="result-conf" id="resultConf">Confidence: 90%</p>
+          <div class="conf-track"><div class="conf-fill-pos" id="confFill" style="width:90%"></div></div>
+        </div>
+      </div>
+
+      <div class="tally-box">
+        <p class="tally-heading" id="tallyHeading">Here's how everyone feels about this film</p>
+        <div class="tally-row"><span>👍 Positive</span><span class="tally-pos" id="tallyPos">0</span></div>
+        <div class="tally-row"><span>👎 Negative</span><span class="tally-neg" id="tallyNeg">0</span></div>
+        <div class="tally-total"><span>Total reviews</span><span id="tallyTotal">0</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Detail overlay (shared) -->
+  <div class="detail-overlay" id="detailOverlay">
+    <div class="detail-backdrop" id="detailBackdrop"></div>
+    <div class="detail-panel" id="detailPanel">
+      <button class="detail-close" id="detailClose">✕</button>
+      <div id="detailContent"></div>
+    </div>
+  </div>
+
+  <script>
+    // ── Dismiss intro on scroll, click, or after a timeout ──
+    const intro = document.getElementById('intro');
+    let dismissed = false;
+    function dismissIntro() {
+      if (dismissed) return;
+      dismissed = true;
+      intro.classList.add('hidden');
+    }
+    window.addEventListener('wheel', dismissIntro, { once: true });
+    window.addEventListener('touchstart', dismissIntro, { once: true });
+    intro.addEventListener('click', dismissIntro);
+    setTimeout(dismissIntro, 3800); // auto-advance if user just waits
+
+    // ── Scroll-driven entrance for nav cards ──
+    const cardObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in-view');
+        }
+      });
+    }, { threshold: 0.3 });
+    document.querySelectorAll('.nav-card').forEach(card => cardObserver.observe(card));
+
+    // ── Ambient light sweep follows pointer subtly ──
+    document.addEventListener('mousemove', (e) => {
+      const x = (e.clientX / window.innerWidth) * 100;
+      const y = (e.clientY / window.innerHeight) * 100;
+      document.querySelector('.light-sweep').style.setProperty('--lx', `${x}%`);
+      document.querySelector('.light-sweep').style.setProperty('--ly', `${y}%`);
+    });
+
+    // ════════════════════════════════════════════════════
+    // MOOD REEL — genre chips, search, results, details
+    // ════════════════════════════════════════════════════
+
+    // Backend base URL. Change this if you deploy the API elsewhere.
+    const API_BASE = "http://127.0.0.1:8000";
+
+    // Render genre chips — fetched from the real backend so the chip
+    // list always matches recommender.py's MOOD_GENRE_MAP.
+    const genreGrid = document.getElementById('genreGrid');
+    fetch(`${API_BASE}/api/moods`)
+      .then(r => r.json())
+      .then(data => {
+        data.moods.forEach(mood => {
+          const chip = document.createElement('button');
+          chip.className = 'genre-chip';
+          chip.textContent = mood;
+          chip.addEventListener('click', () => {
+            document.querySelectorAll('.genre-chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            runSearch({ mood });
+          });
+          genreGrid.appendChild(chip);
+        });
+      })
+      .catch(() => {
+        genreGrid.innerHTML = '<p style="color:#FFB4C2;font-size:13px;">Could not reach the backend — is it running?</p>';
+      });
+
+    // Search button + enter key
+    const moodSearchInput = document.getElementById('moodSearchInput');
+    const moodSearchBtn = document.getElementById('moodSearchBtn');
+    moodSearchBtn.addEventListener('click', () => {
+      document.querySelectorAll('.genre-chip').forEach(c => c.classList.remove('active'));
+      runSearch({ freeText: moodSearchInput.value });
+    });
+    moodSearchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') moodSearchBtn.click();
+    });
+
+    // ── Core search flow (placeholder — swap for real fetch() later) ──
+    function runSearch({ mood = null, freeText = "" }) {
+      const loading = document.getElementById('reelLoading');
+      const resultsSection = document.getElementById('resultsSection');
+      resultsSection.classList.remove('visible');
+      loading.classList.add('visible');
+
+      // Simulated network delay so the loading state is visible/testable
+      fetchRecommendations({ mood, freeText }).then(movies => {
+        loading.classList.remove('visible');
+        renderResults(movies);
+        resultsSection.classList.add('visible');
+        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+
+    function fetchRecommendations({ mood, freeText }) {
+      const params = new URLSearchParams();
+      if (mood) params.set('mood', mood);
+      if (freeText) params.set('free_text', freeText);
+      params.set('top_n', 8);
+
+      return fetch(`${API_BASE}/api/recommend?${params.toString()}`)
+        .then(r => {
+          if (!r.ok) throw new Error('Request failed');
+          return r.json();
+        })
+        .then(data => data.movies)
+        .catch(() => {
+          alert("Couldn't reach the recommendation service. Is the backend running?");
+          return [];
+        });
+    }
+
+    function renderResults(movies) {
+      const grid = document.getElementById('movieGrid');
+      grid.innerHTML = '';
+      if (!movies.length) {
+        grid.innerHTML = '<p style="color:#8C7AB5;text-align:center;">No matches found — try a different mood or wording.</p>';
+        return;
+      }
+      movies.forEach(movie => {
+        const ratingText = (movie.rating !== null && movie.rating !== undefined) ? movie.rating.toFixed(1) : '—';
+        const yearText = movie.release_date ? String(movie.release_date).slice(0, 4) : '—';
+        const card = document.createElement('div');
+        card.className = 'movie-card';
+        card.innerHTML = `
+          <div class="movie-poster-icon">🎬</div>
+          <p class="movie-card-title">${movie.title}</p>
+          <p class="movie-card-genre">${movie.genres}</p>
+          <p class="movie-card-rating">⭐ ${ratingText} · ${yearText}</p>
+        `;
+        card.addEventListener('click', () => openDetail(movie));
+        grid.appendChild(card);
+      });
+    }
+
+    // ── Detail overlay ──
+    // Varied placeholder gradients so the backdrop isn't identical for
+    // every movie while we wait for real poster images from TMDB.
+    const BACKDROP_GRADIENTS = [
+      'linear-gradient(160deg, #7B2FF7, #FF2E63)',
+      'linear-gradient(160deg, #9D4EDD, #5A2A9E)',
+      'linear-gradient(160deg, #FF2E63, #9D4EDD)',
+      'linear-gradient(160deg, #C77DFF, #7B2FF7)',
+      'linear-gradient(160deg, #FF8FA3, #9D4EDD)',
+    ];
+
+    function openDetail(movie) {
+      const ratingText = (movie.rating !== null && movie.rating !== undefined) ? movie.rating.toFixed(1) : '—';
+      const yearText = movie.release_date ? String(movie.release_date).slice(0, 4) : '—';
+
+      const content = document.getElementById('detailContent');
+      content.innerHTML = `
+        <p class="detail-title">${movie.title}</p>
+        <div class="detail-meta">
+          <span>⭐ ${ratingText}</span>
+          <span>${yearText}</span>
+          <span>${movie.genres}</span>
+        </div>
+        <p class="detail-overview">${movie.overview || 'No synopsis available.'}</p>
+        <p class="detail-watch-heading">Where to watch</p>
+        <p class="detail-watch-list" id="watchProviders">Checking streaming availability...</p>
+      `;
+
+      // Placeholder backdrop gradient until the real poster loads in below.
+      const backdropEl = document.getElementById('detailBackdrop');
+      const gradient = BACKDROP_GRADIENTS[Math.floor(Math.random() * BACKDROP_GRADIENTS.length)];
+      backdropEl.style.setProperty('--backdrop-image', gradient);
+
+      document.getElementById('detailOverlay').classList.add('visible');
+
+      // Real call: poster + watch providers from TMDB via our backend.
+      const params = new URLSearchParams({ title: movie.title });
+      if (yearText !== '—') params.set('year', yearText);
+
+      fetch(`${API_BASE}/api/movie-details?${params.toString()}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.poster_url) {
+            backdropEl.style.setProperty('--backdrop-image', `url(${data.poster_url})`);
+          }
+          const watchEl = document.getElementById('watchProviders');
+          if (!watchEl) return;
+          const providers = data.providers;
+          if (providers && (providers.flatrate?.length || providers.rent?.length || providers.buy?.length)) {
+            const parts = [];
+            if (providers.flatrate?.length) parts.push(`Stream: ${providers.flatrate.join(', ')}`);
+            if (providers.rent?.length) parts.push(`Rent: ${providers.rent.join(', ')}`);
+            if (providers.buy?.length) parts.push(`Buy: ${providers.buy.join(', ')}`);
+            watchEl.innerHTML = parts.join('<br>');
+          } else {
+            watchEl.textContent = "Streaming availability not found for this title.";
+          }
+        })
+        .catch(() => {
+          const watchEl = document.getElementById('watchProviders');
+          if (watchEl) watchEl.textContent = "Couldn't reach the movie details service.";
+        });
+    }
+
+    document.getElementById('detailClose').addEventListener('click', closeDetail);
+    document.getElementById('detailOverlay').addEventListener('click', (e) => {
+      if (e.target.id === 'detailOverlay') closeDetail();
+    });
+    function closeDetail() {
+      document.getElementById('detailOverlay').classList.remove('visible');
+    }
+
+    // ════════════════════════════════════════════════════
+    // THE VERDICT — movie picker, review, real sentiment, tally
+    // ════════════════════════════════════════════════════
+
+    const verdictMovieInput = document.getElementById('verdictMovieInput');
+    const suggestionsList = document.getElementById('suggestionsList');
+    const verdictReviewInput = document.getElementById('verdictReviewInput');
+    const verdictSubmitBtn = document.getElementById('verdictSubmitBtn');
+    const verdictWarning = document.getElementById('verdictWarning');
+
+    let selectedMovieTitle = "";
+    let highlightedIndex = -1;
+    let searchDebounceTimer = null;
+
+    // ── Autocomplete (debounced real API call) ──
+    verdictMovieInput.addEventListener('input', () => {
+      const query = verdictMovieInput.value.trim();
+      selectedMovieTitle = ""; // typing manually clears a prior selection
+      highlightedIndex = -1;
+
+      clearTimeout(searchDebounceTimer);
+      if (query.length < 1) {
+        suggestionsList.classList.remove('visible');
+        return;
+      }
+
+      searchDebounceTimer = setTimeout(() => {
+        fetch(`${API_BASE}/api/search-movies?q=${encodeURIComponent(query)}`)
+          .then(r => r.json())
+          .then(data => renderSuggestions(data.matches.slice(0, 6)))
+          .catch(() => suggestionsList.classList.remove('visible'));
+      }, 200);
+    });
+
+    function renderSuggestions(matches) {
+      if (matches.length === 0) {
+        suggestionsList.classList.remove('visible');
+        return;
+      }
+      suggestionsList.innerHTML = '';
+      matches.forEach((movie, i) => {
+        const item = document.createElement('div');
+        item.className = 'suggestion-item';
+        item.innerHTML = `${movie.title}<span class="sugg-genre">${movie.genres}</span>`;
+        item.addEventListener('click', () => selectSuggestion(movie.title));
+        suggestionsList.appendChild(item);
+      });
+      suggestionsList.classList.add('visible');
+    }
+
+    function selectSuggestion(title) {
+      verdictMovieInput.value = title;
+      selectedMovieTitle = title;
+      suggestionsList.classList.remove('visible');
+    }
+
+    // Keyboard navigation through suggestions
+    verdictMovieInput.addEventListener('keydown', (e) => {
+      const items = suggestionsList.querySelectorAll('.suggestion-item');
+      if (!items.length || !suggestionsList.classList.contains('visible')) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        highlightedIndex = Math.min(highlightedIndex + 1, items.length - 1);
+        updateHighlight(items);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        highlightedIndex = Math.max(highlightedIndex - 1, 0);
+        updateHighlight(items);
+      } else if (e.key === 'Enter' && highlightedIndex >= 0) {
+        e.preventDefault();
+        items[highlightedIndex].click();
+      } else if (e.key === 'Escape') {
+        suggestionsList.classList.remove('visible');
+      }
+    });
+
+    function updateHighlight(items) {
+      items.forEach((item, i) => item.classList.toggle('highlighted', i === highlightedIndex));
+    }
+
+    // Close suggestions when clicking elsewhere
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.movie-picker')) {
+        suggestionsList.classList.remove('visible');
+      }
+    });
+
+    // ── Real sentiment analysis via the trained model on the backend ──
+    function analyzeSentiment(movieTitle, reviewText) {
+      return fetch(`${API_BASE}/api/analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ movie_title: movieTitle, review_text: reviewText })
+      }).then(r => {
+        if (!r.ok) throw new Error('Request failed');
+        return r.json(); // { sentiment, confidence, tally: { positive, negative } }
+      });
+    }
+
+    // ── Submit flow ──
+    verdictSubmitBtn.addEventListener('click', () => {
+      const movieTitle = verdictMovieInput.value.trim();
+      const reviewText = verdictReviewInput.value.trim();
+
+      if (!movieTitle || !reviewText) {
+        verdictWarning.classList.add('visible');
+        return;
+      }
+      verdictWarning.classList.remove('visible');
+      verdictSubmitBtn.disabled = true;
+      verdictSubmitBtn.textContent = "Analyzing...";
+
+      analyzeSentiment(movieTitle, reviewText)
+        .then(({ sentiment, confidence, tally }) => {
+          renderVerdictResult(movieTitle, sentiment, confidence, tally);
+          document.getElementById('verdictResult').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        })
+        .catch(() => {
+          alert("Couldn't reach the analysis service. Is the backend running?");
+        })
+        .finally(() => {
+          verdictSubmitBtn.disabled = false;
+          verdictSubmitBtn.textContent = "Submit Verdict";
+        });
+    });
+
+    function renderVerdictResult(movieTitle, sentiment, confidence, tally) {
+      const resultCard = document.getElementById('resultCard');
+      const resultEmoji = document.getElementById('resultEmoji');
+      const resultTitle = document.getElementById('resultTitle');
+      const resultConf = document.getElementById('resultConf');
+      const confFill = document.getElementById('confFill');
+
+      const isPositive = sentiment === 'positive';
+      resultCard.className = 'result-card ' + (isPositive ? 'positive' : 'negative');
+      resultEmoji.textContent = isPositive ? '😊' : '😞';
+      resultTitle.className = isPositive ? 'result-title-pos' : 'result-title-neg';
+      resultTitle.textContent = isPositive ? 'That was a positive review!' : 'That was a negative review.';
+      resultConf.textContent = `Confidence: ${(confidence * 100).toFixed(0)}%`;
+      confFill.className = isPositive ? 'conf-fill-pos' : 'conf-fill-neg';
+      confFill.style.width = `${(confidence * 100).toFixed(0)}%`;
+
+      document.getElementById('tallyHeading').textContent = `Here's how everyone feels about ${movieTitle}`;
+      document.getElementById('tallyPos').textContent = tally.positive;
+      document.getElementById('tallyNeg').textContent = tally.negative;
+      document.getElementById('tallyTotal').textContent = tally.positive + tally.negative;
+
+      document.getElementById('verdictResult').classList.add('visible');
+    }
+  </script>
+
+</body>
+</html>
