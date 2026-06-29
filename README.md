@@ -5,6 +5,12 @@ A movie discovery and review-sentiment web app — combining a mood-based recomm
 **Live demo:** https://cine-sense-1-i0rb.onrender.com
 **API:** https://cine-sense-tgnu.onrender.com
 
+![Hero screen](screenshots/hero.png)
+![Mood Reel Search](screenshots/mood_reel_search.png)
+![Mood Reel Result](screenshots/mood_reel_results.png)
+![The Verdict](screenshots/verdict.png)
+![The Verdict Result](screenshots/verdict_results.png)
+
 > Note: both services run on Render's free tier and may take 30–60 seconds to wake up after a period of inactivity. This is expected behavior, not a bug.
 
 ---
@@ -81,3 +87,4 @@ TMDB_API_KEY=your_key_here
 ## Author
 
 Built by Ancy Chandra as a personal learning project exploring sentiment analysis, content-based recommendation, and full-stack deployment.
+
